@@ -1,0 +1,47 @@
+Load cleaned dataset, assess and re-clean if necessary
+
+```{r}
+df1 <- read.csv("../4. Outputs/master_csv.csv")
+df2 <- df1[complete.cases(df1), ] #drop all remaining NAs for now
+df3 <- df2[,c("season", "home_club_id", "away_club_id", "home_club_position", "away_club_position", "stadium_seats", "attendance", "home_club_strategy", "away_club_strategy", "average_age", "average_age_away", "net_transfer_record", "net_transfer_record_away", "name", "country_name", "total_yellow_cards", "total_red_cards", "average_height_home_club", "average_height_away_club", "average_market_value_home_club", "average_market_value_away_club", "total_assists", "home_club_goals", "away_club_goals")] #include only relevant 24 columns as per whiteboard picture (currently missing a few)
+
+df3[] <- lapply(df3, function(x) if(is.character(x)) factor(x) else x) # convert strings to factors
+df3[,c("home_club_id", "away_club_id")] <- lapply(df3[,c("home_club_id", "away_club_id")], as.factor) # convert team ids to factors
+
+df <- df3
+str(df)
+colSums(is.na(df))
+```
+
+Split training/test datasets
+
+```{r}
+set.seed(0)
+nrows <- nrow(df)
+idx_tr <- sample(nrows, nrows * 0.8)
+df_tr <- df[idx_tr,]
+df_te <- df[-idx_tr,]
+```
+
+
+Run basic linear regression and optimise using step
+
+```{r}
+f1 <- reformulate(names(df[, -c(23, 24)]), response = "home_club_goals")
+f2 <- reformulate(names(df[, -c(23, 24)]), response = "away_club_goals")
+
+
+lr1 <- lm(f1, data = df_tr)
+lr2 <- lm(f2, data = df_tr)
+# lr2 <- step(lr1)
+
+summary(lr1)
+par(mfrow = c(2, 2))
+plot(lr1)
+summary(lr2)
+par(mfrow = c(2, 2))
+plot(lr2)
+
+```
+
+
